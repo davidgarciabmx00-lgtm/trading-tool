@@ -27,17 +27,37 @@ def cargar_datos(activo, periodo, intervalo):
     if datos.empty:
         st.error(f"No se pudieron descargar los datos para {activo}. Revisa el símbolo.")
         return None
+    
+    # Verificar si tenemos un MultiIndex en las columnas y aplanarlo si es necesario
+    if isinstance(datos.columns, pd.MultiIndex):
+        st.warning("Los datos tienen un MultiIndex. Aplanando las columnas...")
+        # Aplanar el MultiIndex
+        datos.columns = ['_'.join(col).strip() for col in datos.columns.values]
+        # Renombrar columnas para que coincidan con lo que espera pandas_ta
+        datos = datos.rename(columns={
+            'Open_' + activo: 'Open',
+            'High_' + activo: 'High',
+            'Low_' + activo: 'Low',
+            'Close_' + activo: 'Close',
+            'Adj Close_' + activo: 'Adj Close',
+            'Volume_' + activo: 'Volume'
+        })
+    
     return datos
 
 datos_historicos = cargar_datos(ACTIVO, PERIODO, TIMEFRAME)
 
 if datos_historicos is not None:
     # --- 3. APLICAR ALGORITMOS Y SEÑALES ---
-    datos_historicos.ta.ema(length=20, append=True)
-    datos_historicos.ta.ema(length=50, append=True)
-    datos_historicos.ta.rsi(length=14, append=True)
-    datos_historicos['tendencia_alcista'] = (datos_historicos['Close'] > datos_historicos['EMA_20']) & (datos_historicos['Close'] > datos_historicos['EMA_50'])
-    datos_historicos['senal_compra_filtrada'] = (datos_historicos['Close'] > datos_historicos['EMA_20']) & (datos_historicos['Close'].shift(1) <= datos_historicos['EMA_20']) & datos_historicos['tendencia_alcista'] & (datos_historicos['RSI_14'] < 70)
+    try:
+        datos_historicos.ta.ema(length=20, append=True)
+        datos_historicos.ta.ema(length=50, append=True)
+        datos_historicos.ta.rsi(length=14, append=True)
+        datos_historicos['tendencia_alcista'] = (datos_historicos['Close'] > datos_historicos['EMA_20']) & (datos_historicos['Close'] > datos_historicos['EMA_50'])
+        datos_historicos['senal_compra_filtrada'] = (datos_historicos['Close'] > datos_historicos['EMA_20']) & (datos_historicos['Close'].shift(1) <= datos_historicos['EMA_20']) & datos_historicos['tendencia_alcista'] & (datos_historicos['RSI_14'] < 70)
+    except Exception as e:
+        st.error(f"Error al calcular indicadores técnicos: {str(e)}")
+        st.stop()
 
     # --- 4. BACKTESTER ---
     resultados_operaciones = []
