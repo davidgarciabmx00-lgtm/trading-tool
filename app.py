@@ -271,7 +271,8 @@ if datos_historicos is not None:
     # MACD
     fig.add_trace(go.Scatter(x=datos_historicos.index, y=datos_historicos['MACD_12_26_9'], line=dict(color='blue'), name='MACD'), row=3, col=1)
     fig.add_trace(go.Scatter(x=datos_historicos.index, y=datos_historicos['MACDs_12_26_9'], line=dict(color='red'), name='Señal MACD'), row=3, col=1)
-    fig.add_bar(x=datos_historicos.index, y=datos_historicos['MACDh_12_26_9'], name='Histograma MACD', marker_color='gray'), row=3, col=1
+    # LÍNEA CORREGIDA AQUÍ
+    fig.add_trace(go.Bar(x=datos_historicos.index, y=datos_historicos['MACDh_12_26_9'], name='Histograma MACD', marker_color='gray'), row=3, col=1)
 
     # Volumen
     fig.add_trace(go.Bar(x=datos_historicos.index, y=datos_historicos['Volume'], name='Volumen', marker_color='lightblue'), row=4, col=1)
