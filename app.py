@@ -62,7 +62,16 @@ if datos_historicos is not None:
     datos_historicos.ta.ema(length=20, append=True)
     datos_historicos.ta.ema(length=50, append=True)
     datos_historicos.ta.rsi(length=14, append=True)
-    datos_historicos.ta.bbands(length=20, std=2, append=True)
+    
+    # Calcular Bollinger Bands manualmente para asegurar que existan
+    bb_length = 20
+    bb_std = 2
+    datos_historicos['BBM'] = datos_historicos['Close'].rolling(window=bb_length).mean()
+    datos_historicos['BB_STD'] = datos_historicos['Close'].rolling(window=bb_length).std()
+    datos_historicos['BBL'] = datos_historicos['BBM'] - (datos_historicos['BB_STD'] * bb_std)
+    datos_historicos['BBU'] = datos_historicos['BBM'] + (datos_historicos['BB_STD'] * bb_std)
+    
+    # Calcular MACD
     datos_historicos.ta.macd(fast=12, slow=26, signal=9, append=True)
     
     # Calcular media móvil de volumen
@@ -84,7 +93,7 @@ if datos_historicos is not None:
     
     # Estrategia 2: Mean Reversion
     datos_historicos['senal_mean_reversion'] = (
-        (datos_historicos['Close'] < datos_historicos['BBL_20_2.0']) & 
+        (datos_historicos['Close'] < datos_historicos['BBL']) & 
         (datos_historicos['RSI_14'] < 30) &
         datos_historicos['volumen_alto']
     )
@@ -135,7 +144,7 @@ if datos_historicos is not None:
                 precio_salida = take_profit_actual
             elif fila_actual['Low'] <= stop_loss_actual:
                 precio_salida = stop_loss_actual
-            elif ESTRATEGIA == 'Mean Reversion' and fila_actual['Close'] >= datos_historicos.iloc[i-1]['BBM_20_2.0']:
+            elif ESTRATEGIA == 'Mean Reversion' and fila_actual['Close'] >= datos_historicos.iloc[i-1]['BBM']:
                 precio_salida = fila_actual['Close']  # Salir al volver a la media
             
             # Registrar operación
@@ -208,11 +217,11 @@ if datos_historicos is not None:
     
     # Bandas de Bollinger
     fig.add_trace(go.Scatter(x=datos_historicos.index, 
-                            y=datos_historicos['BBU_20_2.0'], 
+                            y=datos_historicos['BBU'], 
                             line=dict(color='lightgray', width=1), 
                             name='Banda Superior'), row=1, col=1)
     fig.add_trace(go.Scatter(x=datos_historicos.index, 
-                            y=datos_historicos['BBL_20_2.0'], 
+                            y=datos_historicos['BBL'], 
                             line=dict(color='lightgray', width=1), 
                             fill='tonexty', 
                             name='Banda Inferior'), row=1, col=1)
